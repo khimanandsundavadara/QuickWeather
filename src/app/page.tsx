@@ -2,13 +2,16 @@
 "use client";
 import { weatherSerrvice } from "@/services/weaather.service";
 import { useEffect, useState } from "react";
-import { X, Star } from "lucide-react"; 
+import { X, Star, Sun, Moon } from "lucide-react";
 
 export default function Home() {
   const [searchedWeathers, setSearchedWeathers] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [favoriteCity, setFavoriteCity] = useState<string | null>(null);
-  const [forecastData, setForecastData] = useState<{ [city: string]: any[] }>({});
+  const [forecastData, setForecastData] = useState<{ [city: string]: any[] }>(
+    {}
+  );
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const storedFav = localStorage.getItem("favoriteCity");
@@ -16,7 +19,17 @@ export default function Home() {
       setFavoriteCity(storedFav);
       handleWeather(storedFav);
     }
+
+    const storedDark = localStorage.getItem("darkMode");
+    if (storedDark === "true") {
+      setDarkMode(true);
+    }
   }, []);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    localStorage.setItem("darkMode", String(!darkMode));
+  };
 
   const handleForcast = async (city: string) => {
     try {
@@ -90,8 +103,20 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center text-lg mt-10 px-10">
-      <p className="border-b-2 mb-5 text-xl font-semibold text-white">
+    <div
+      className={`flex flex-col items-center justify-center text-lg px-10 min-h-screen transition-colors duration-300 ${
+        darkMode ? "bg-gray-900 text-white" : "bg-white text-black"
+      }`}
+    >
+      {/* Toggle Button */}
+      <button
+        onClick={toggleDarkMode}
+        className="absolute top-5 right-5 p-2 rounded-full border transition-colors duration-300 hover:bg-gray-300 dark:hover:bg-gray-700"
+      >
+        {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
+      </button>
+
+      <p className="border-b-2 mb-5 text-xl font-semibold">
         Welcome to QuickWeather!
       </p>
 
@@ -104,7 +129,9 @@ export default function Home() {
             type="text"
             placeholder="Enter the city"
             name="city"
-            className="border p-2 rounded flex-1"
+            className={`border p-2 rounded flex-1 transition-colors duration-300 ${
+              darkMode ? "bg-gray-800 text-white border-gray-700" : ""
+            }`}
           />
           <input
             type="submit"
@@ -121,7 +148,11 @@ export default function Home() {
         {[...searchedWeathers].reverse().map((weather, index) => (
           <div
             key={index}
-            className="relative border rounded-lg p-4 shadow-md bg-black text-white"
+            className={`relative border rounded-lg p-4 shadow-md transition-colors duration-300 ${
+              darkMode
+                ? "bg-gray-800 border-gray-700 text-white"
+                : "bg-gray-100 border-gray-300 text-black"
+            }`}
           >
             <div className="flex justify-between items-start">
               <h2 className="text-lg font-bold">
@@ -133,6 +164,8 @@ export default function Home() {
                   className={`w-5 h-5 cursor-pointer ${
                     favoriteCity?.toLowerCase() === weather.name.toLowerCase()
                       ? "text-yellow-400"
+                      : darkMode
+                      ? "text-gray-300"
                       : "text-gray-500"
                   }`}
                 />
@@ -143,9 +176,7 @@ export default function Home() {
               </div>
             </div>
 
-            <p className="text-gray-300 capitalize">
-              {weather.weather[0]?.description}
-            </p>
+            <p className="capitalize">{weather.weather[0]?.description}</p>
 
             <div className="flex items-center gap-2 my-2">
               <img
@@ -161,15 +192,12 @@ export default function Home() {
             <p>Wind: {weather.wind.speed} m/s</p>
 
             {/* 5-day forecast */}
-            <div className="mt-4 border-t border-gray-700 pt-2">
+            <div className="mt-4 border-t pt-2 border-gray-400">
               <p className="font-semibold mb-2">5-Day Forecast</p>
               <div className="flex justify-between">
                 {(forecastData[weather.name.toLowerCase()] || []).map(
                   (fcast, idx) => (
-                    <div
-                      key={idx}
-                      className="flex flex-col items-center text-sm"
-                    >
+                    <div key={idx} className="flex flex-col items-center text-sm">
                       <p className="font-medium">
                         {new Date(fcast.dt_txt).toLocaleDateString(undefined, {
                           weekday: "short",
