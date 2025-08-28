@@ -19,11 +19,6 @@ export default function Home() {
       setFavoriteCity(storedFav);
       handleWeather(storedFav);
     }
-
-    const storedDark = localStorage.getItem("darkMode");
-    if (storedDark === "true") {
-      setDarkMode(true);
-    }
   }, []);
 
   const toggleDarkMode = () => {
@@ -33,23 +28,26 @@ export default function Home() {
 
   const handleForcast = async (city: string) => {
     try {
+      console.log("forcast called for :",city)
       const res = await weatherSerrvice.getForcast(city);
+      console.log(res);
       if (res && res.list) {
-        const dailyForecast: any[] = [];
+        let dailyForecast: any[] = [];
         const usedDates: Set<string> = new Set();
-
         res.list.forEach((item: any) => {
           const date = item.dt_txt.split(" ")[0];
-          if (!usedDates.has(date) && dailyForecast.length < 5) {
+          if (!usedDates.has(date)) {
             dailyForecast.push(item);
             usedDates.add(date);
           }
         });
-
+        dailyForecast = dailyForecast.slice(1);
+        console.log(dailyForecast)
         setForecastData((prev) => ({
           ...prev,
           [city.toLowerCase()]: dailyForecast,
         }));
+        console.log(forecastData)
       }
     } catch (error) {
       console.error("Forecast error:", error);
@@ -66,7 +64,6 @@ export default function Home() {
   const handleWeather = async (city: string) => {
     try {
       const res = await weatherSerrvice.getAll(city);
-
       if (res) {
         setSearchedWeathers((prevArray) => {
           const updated = prevArray.filter(
@@ -75,7 +72,7 @@ export default function Home() {
           return [...updated, res];
         });
         setErrorMessage("");
-        handleForcast(city);
+        handleForcast(res.name);
       }
     } catch (error: any) {
       console.error("Error fetching weather:", error);
@@ -89,6 +86,7 @@ export default function Home() {
 
   const handleDelete = (index: number) => {
     index = searchedWeathers.length - index - 1;
+    
     setSearchedWeathers((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -104,16 +102,19 @@ export default function Home() {
 
   return (
     <div
-      className={`flex flex-col items-center justify-center text-lg px-10 min-h-screen transition-colors duration-300 ${
-        darkMode ? "bg-gray-900 text-white" : "bg-white text-black"
+      className={`flex flex-col items-center justify-center text-lg px-10 min-h-screen ${
+        darkMode ? "bg-black text-white" : "bg-white text-black"
       }`}
     >
-      {/* Toggle Button */}
       <button
         onClick={toggleDarkMode}
-        className="absolute top-5 right-5 p-2 rounded-full border transition-colors duration-300 hover:bg-gray-300 dark:hover:bg-gray-700"
+        className="absolute top-5 right-5 p-2 rounded-full border"
       >
-        {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
+        {darkMode ? (
+          <Sun className="w-5 h-5 text-white-400" />
+        ) : (
+          <Moon className="w-5 h-5 text-black-500" />
+        )}
       </button>
 
       <p className="border-b-2 mb-5 text-xl font-semibold">
@@ -129,14 +130,16 @@ export default function Home() {
             type="text"
             placeholder="Enter the city"
             name="city"
-            className={`border p-2 rounded flex-1 transition-colors duration-300 ${
-              darkMode ? "bg-gray-800 text-white border-gray-700" : ""
+            className={`border p-2 rounded flex-1 ${
+              darkMode
+                ? "bg-black text-white border-gray-500"
+                : "bg-white text-black border-gray-400"
             }`}
           />
           <input
             type="submit"
             value={"Search"}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer"
+            className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer"
           />
         </div>
         {errorMessage && (
@@ -148,10 +151,10 @@ export default function Home() {
         {[...searchedWeathers].reverse().map((weather, index) => (
           <div
             key={index}
-            className={`relative border rounded-lg p-4 shadow-md transition-colors duration-300 ${
+            className={`relative border rounded-lg p-4 shadow-md ${
               darkMode
-                ? "bg-gray-800 border-gray-700 text-white"
-                : "bg-gray-100 border-gray-300 text-black"
+                ? "bg-black border-gray-500 text-white"
+                : "bg-white border-gray-400 text-black"
             }`}
           >
             <div className="flex justify-between items-start">
@@ -165,8 +168,8 @@ export default function Home() {
                     favoriteCity?.toLowerCase() === weather.name.toLowerCase()
                       ? "text-yellow-400"
                       : darkMode
-                      ? "text-gray-300"
-                      : "text-gray-500"
+                      ? "text-white"
+                      : "text-black"
                   }`}
                 />
                 <X
@@ -191,7 +194,6 @@ export default function Home() {
             <p>Humidity: {weather.main.humidity}%</p>
             <p>Wind: {weather.wind.speed} m/s</p>
 
-            {/* 5-day forecast */}
             <div className="mt-4 border-t pt-2 border-gray-400">
               <p className="font-semibold mb-2">5-Day Forecast</p>
               <div className="flex justify-between">
